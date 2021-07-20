@@ -1,0 +1,157 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity fsm is 
+	port(
+		reset_n, clk, en, config , ini_pausa, jugador_act, min_value_j0, min_value_j1 : in std_logic;
+		modo: in std_logic_vector(1 downto 0);
+		ini_pausa_j0, borrar_j0, ini_pausa_j1, borrar_j1, en_sel: out std_logic
+	);
+end fsm;
+
+library ieee;
+use ieee.std_logic_1164.all;
+
+architecture comportamental of fsm is
+
+type estados is (ST_IDLE,ST_WAIT_CONFIG, ST_PLAYERS_CONFIG, ST_PLAYER_0_P, ST_PLAYER_1_P, ST_PLAYER_0, ST_PLAYER_1, ST_PLAYER_0_L, ST_PLAYER_1_L );
+signal estado_presente, estado_siguiente : estados;
+
+begin
+
+     process(clk, reset_n)
+
+     begin
+
+        if reset_n = '0' then
+             estado_presente <= ST_IDLE;
+        elsif rising_edge(clk) then
+             estado_presente <= estado_siguiente;
+         end if;
+      end process;
+
+     process(estado_presente, en, config, ini_pausa, modo, jugador_act, min_value_j0, min_value_j1)
+     begin
+        case (estado_presente) is
+             when ST_IDLE =>
+                if config = '1' then
+                    estado_siguiente <= ST_WAIT_CONFIG;
+                elsif config = '0' then 
+                    estado_siguiente <= ST_IDLE;
+						  ini_pausa_j0 <= '0';
+						  ini_pausa_j1 <= '0';
+						  borrar_j0 <= '1';
+						  borrar_j1 <= '1';
+                end if;
+             when ST_WAIT_CONFIG  =>
+                 if config = '1' then
+                    estado_siguiente <= ST_WAIT_CONFIG;
+						  en_sel <= '1';
+						  ini_pausa_j0 <= '0';
+						  ini_pausa_j1 <= '0';
+						  borrar_j0 <= '0';
+						  borrar_j1 <= '0';
+                 elsif config= '0' then 
+                    estado_siguiente <= ST_PLAYERS_CONFIG;
+                 end if;
+             when ST_PLAYERS_CONFIG =>
+                if ini_pausa = '0' then
+                    estado_siguiente <= ST_PLAYERS_CONFIG;
+						  ini_pausa_j0 <= '0';
+						  ini_pausa_j1 <= '0';
+						  borrar_j0 <= '0';
+						  borrar_j1 <= '0';
+						  en_sel <= '0';
+                elsif ini_pausa = '1' then 
+                    if jugador_act = '1' then
+						  estado_siguiente <= ST_PLAYER_1_P;
+						  elsif jugador_act ='0' then
+						  estado_siguiente <= ST_PLAYER_0_P;
+						  end if;
+                end if;
+				 when ST_PLAYER_0_P =>
+                if ini_pausa = '0' then
+                    estado_siguiente <= ST_PLAYER_0_P;
+						  ini_pausa_j0 <= '0';
+						  ini_pausa_j1 <= '0';
+						  borrar_j0 <= '0';
+						  borrar_j1 <= '0';
+						  en_sel <= '0';
+                elsif ini_pausa = '1' then 
+						  estado_siguiente <= ST_PLAYER_0;
+					 elsif jugador_act = '1' then
+						  estado_siguiente <= ST_PLAYER_1_P;
+					 elsif jugador_act ='0' then
+						  estado_siguiente <= ST_PLAYER_0_P; 
+                end if;
+				 when ST_PLAYER_1_P =>
+                if ini_pausa = '0' then
+                    estado_siguiente <= ST_PLAYER_1_P;
+						  ini_pausa_j0 <= '0';
+						  ini_pausa_j1 <= '0';
+						  borrar_j0 <= '0';
+						  borrar_j1 <= '0';
+						  en_sel <= '0';
+                elsif ini_pausa = '1' then 
+						  estado_siguiente <= ST_PLAYER_1; 
+					 elsif jugador_act = '1' then
+						  estado_siguiente <= ST_PLAYER_1_P;
+					 elsif jugador_act ='0' then
+						  estado_siguiente <= ST_PLAYER_0_P; 
+                end if;
+				 when ST_PLAYER_0 =>
+                if ini_pausa = '1' then
+                    estado_siguiente <= ST_PLAYER_0;
+						  ini_pausa_j0 <= '1';
+						  ini_pausa_j1 <= '0';
+						  borrar_j0 <= '0';
+						  borrar_j1 <= '0';
+						  en_sel <= '0';
+                elsif ini_pausa = '0' then 
+						  estado_siguiente <= ST_PLAYER_0_P;
+					 elsif min_value_j0 = '1' then
+						  estado_siguiente <= ST_PLAYER_0_L;
+					 elsif jugador_act = '1' then
+						  estado_siguiente <= ST_PLAYER_1;
+                end if;
+				 when ST_PLAYER_1 =>
+                if ini_pausa = '1' then
+                    estado_siguiente <= ST_PLAYER_1;
+						  ini_pausa_j0 <= '0';
+						  ini_pausa_j1 <= '1';
+						  borrar_j0 <= '0';
+						  borrar_j1 <= '0';
+						  en_sel <= '0';
+                elsif ini_pausa = '0' then 
+						  estado_siguiente <= ST_PLAYER_1_P;
+					 elsif min_value_j0 = '1' then
+						  estado_siguiente <= ST_PLAYER_1_L;
+					 elsif jugador_act = '0' then
+						  estado_siguiente <= ST_PLAYER_0;
+                end if;
+				 when ST_PLAYER_0_L =>
+                if reset_n = '1' then
+                    estado_siguiente <= ST_PLAYER_0_L;
+						  ini_pausa_j0 <= '0';
+						  ini_pausa_j1 <= '0';
+						  borrar_j0 <= '0';
+						  borrar_j1 <= '0';
+						  en_sel <= '0';
+                elsif reset_n = '0' then 
+						  estado_siguiente <= ST_IDLE;
+                end if;
+				 when ST_PLAYER_1_L =>
+                if reset_n = '1' then
+                    estado_siguiente <= ST_PLAYER_1_L;
+						  ini_pausa_j0 <= '0';
+						  ini_pausa_j1 <= '0';
+						  borrar_j0 <= '0';
+						  borrar_j1 <= '0';
+						  en_sel <= '0';
+                elsif reset_n = '0' then 
+						  estado_siguiente <= ST_IDLE;
+                end if;
+        end case;
+     end process;
+end comportamental;
